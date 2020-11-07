@@ -17,7 +17,6 @@ class CreateConversationUserTable extends Migration
             $table->bigInteger('user_id');
             $table->bigInteger('conversation_id');
             $table->bigInteger('start_at')->default(0);
-            $table->timestamp('last_active');
             $table->string('role')->default('USER');
         });
     }

@@ -18,8 +18,7 @@ class CreateConversationsTable extends Migration
             $table->string('conv_title')->nullable();
             $table->string('conv_icon')->nullable();
             $table->string('conv_desc')->nullable();
-            $table->string('last_msg')->nullable();
-            $table->string('conv_type');
+            $table->string('conv_type')->default("MONO");
             $table->timestamp('deleted_at')->nullable();
             $table->timestamps();
         });

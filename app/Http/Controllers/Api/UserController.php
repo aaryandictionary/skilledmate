@@ -65,6 +65,10 @@ class UserController extends Controller
         if(Auth::attempt(['phone' => request('phone'), 'password' => request('password')])){ 
             $user = Auth::user(); 
 
+            $user=User::where('phone',request('phone'))->first();
+            $user->token=request('token');
+            $user->save();
+
             $success=$user;
             // $success['token'] =  $user->createToken('MyApp')-> accessToken; 
             $response=ApiHelper::createAPIResponse(false,1,"Login successful",$success);

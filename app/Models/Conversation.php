@@ -13,7 +13,6 @@ class Conversation extends Model
         'conv_title',
         'conv_icon',
         'conv_desc',
-        'last_msg',
         'conv_type',
         'deleted_at',
         'created_at',

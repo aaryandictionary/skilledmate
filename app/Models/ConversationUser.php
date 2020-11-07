@@ -14,7 +14,6 @@ class ConversationUser extends Model
         'user_id',
         'conversation_id',
         'start_at',
-        'last_active',
         'role',
         ];
 }
