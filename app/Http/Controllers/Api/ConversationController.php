@@ -59,6 +59,13 @@ class ConversationController extends Controller
 
         $single=Conversation::whereIn('conversations.id',$singleConv)
                                 ->leftJoin('conversation_user','conversation_user.conversation_id','conversations.id')
+                                ->leftJoin('messages',function($joins){
+                                    $joins->on('messages.conversation_id','=','conversations.id')
+                                            ->select('messages.text_msg','messages.content','messages.content_type','messages.created_at')
+                                            ->orderBy('messages.id','DESC')
+                                            ->limit(1);
+                                })
+                                ->addSelect(DB::raw("IF(messages.content_type='TEXT',messages.text_msg,messages.content_type)as last_message,messages.created_at"))
                                 ->where('conversation_user.user_id','!=',$userId)
                                 ->join('users','users.id','conversation_user.user_id')
                                 ->select(DB::raw("users.name as conv_title, users.user_image as conv_icon,conversation_user.user_id as user_id,last_msg,conv_type,conversation_user.conversation_id,conversation_user.last_active"));
@@ -69,6 +76,13 @@ class ConversationController extends Controller
                                 ->pluck('conversation_id');
         $groups=Conversation::whereIn('conversations.id',$groupConv)
                                 ->leftJoin('conversation_user','conversation_user.conversation_id','conversations.id')
+                                ->leftJoin('messages',function($joins){
+                                    $joins->on('messages.conversation_id','=','conversations.id')
+                                            ->select('messages.text_msg','messages.content','messages.content_type','messages.created_at')
+                                            ->orderBy('messages.id','DESC')
+                                            ->limit(1);
+                                })
+                                ->addSelect(DB::raw("IF(messages.content_type='TEXT',messages.text_msg,messages.content_type)as last_message,messages.created_at"))
                                 ->where('conversation_user.user_id','=',$userId)
                                 ->select(DB::raw("conv_title,conv_icon,-1 as user_id,last_msg,conv_type,id as conversation_id,conversation_user.last_active"))
                                 ->union($single)
