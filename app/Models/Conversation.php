@@ -22,4 +22,8 @@ class Conversation extends Model
     public function users(){
         return $this->belongsToMany(User::class)->withPivot('role','last_active');
     }
+
+    public function lastmessage(){
+        return $this->hasOne(Message::class,'conversation_id','id')->orderBy('id','DESC');
+    }
 }

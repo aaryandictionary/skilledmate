@@ -80,6 +80,7 @@ Route::get('getEventDetails/{eventId}/{userId}','Api\EventController@getEventDet
 //Conversation
 Route::post('createConversation','Api\ConversationController@createConversation');
 Route::get('getMyConversations/{userId}','Api\ConversationController@getMyConversations');
+// Route::get('getmyconv/{userId}','Api\ConversationController@getmyconv');
 Route::get('getConversationUsers/{convId}','Api\ConversationController@getConversationUsers');
 
 //Message

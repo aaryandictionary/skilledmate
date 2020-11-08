@@ -17,4 +17,8 @@ class Message extends Model
         'created_at',
         'updated_at',
     ];
+
+    public function conversation(){
+        return $this->belongsTo(Conversation::class);
+    }
 }
