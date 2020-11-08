@@ -15,6 +15,7 @@ class Team extends Model
         'team_tagline',
         'team_icon',
         'team_description',
+        'conversation_id',
         'created_at',
         'updated_at',
     ];

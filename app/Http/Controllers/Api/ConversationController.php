@@ -65,10 +65,10 @@ class ConversationController extends Controller
                                             ->orderBy('messages.id','DESC')
                                             ->limit(1);
                                 })
-                                ->addSelect(DB::raw("IF(messages.content_type='TEXT',messages.text_msg,messages.content_type)as last_message,messages.created_at"))
                                 ->where('conversation_user.user_id','!=',$userId)
                                 ->join('users','users.id','conversation_user.user_id')
-                                ->select(DB::raw("users.name as conv_title, users.user_image as conv_icon,conversation_user.user_id as user_id,last_msg,conv_type,conversation_user.conversation_id,conversation_user.last_active"));
+                                ->select(DB::raw("users.name as conv_title, users.user_image as conv_icon,conversation_user.user_id as user_id,conv_type,conversation_user.conversation_id"))
+                                ->addSelect(DB::raw("IF(messages.content_type='TEXT',messages.text_msg,messages.content_type)as last_message,messages.created_at"));
 
         $groupConv=ConversationUser::where('user_id',$user->id)
                                 ->join('conversations','conversations.id','conversation_user.conversation_id')
@@ -82,9 +82,9 @@ class ConversationController extends Controller
                                             ->orderBy('messages.id','DESC')
                                             ->limit(1);
                                 })
-                                ->addSelect(DB::raw("IF(messages.content_type='TEXT',messages.text_msg,messages.content_type)as last_message,messages.created_at"))
                                 ->where('conversation_user.user_id','=',$userId)
-                                ->select(DB::raw("conv_title,conv_icon,-1 as user_id,last_msg,conv_type,id as conversation_id,conversation_user.last_active"))
+                                ->select(DB::raw("conv_title,conv_icon,-1 as user_id,conv_type,conversations.id as conversation_id"))
+                                ->addSelect(DB::raw("IF(messages.content_type='TEXT',messages.text_msg,messages.content_type)as last_message,messages.created_at"))
                                 ->union($single)
                                 ->get();                                
 
@@ -137,14 +137,32 @@ class ConversationController extends Controller
         return response()->json($response, 200);
     }
 
-    public function getChatMessages($convId,$userId){
+    public function getChatMessages($convId,$userId,$from,$paginate){
+        if($from=="-1"){
         $messages=ConversationUser::where('conversation_user.conversation_id',$convId)
-                                    ->where('conversation_user.user_id',$userId)
-                                    ->join('messages','messages.conversation_id','conversation_user.conversation_id')
-                                    ->join('users','users.id','messages.sender_id')
-                                    ->where('messages.id','>=','conversation_user.start_at')
-                                    ->select(DB::raw("messages.id,messages.sender_id,messages.content_type,messages.content,messages.text_msg,messages.created_at,users.name as sender_name"))
-                                    ->get();
+            ->where('conversation_user.user_id',$userId)
+            ->join('messages','messages.conversation_id','conversation_user.conversation_id')
+            ->join('users','users.id','messages.sender_id')
+            ->where('messages.id','>=','conversation_user.start_at')
+            ->select(DB::raw("messages.id,messages.sender_id,messages.content_type,messages.content,messages.text_msg,messages.created_at,users.name as sender_name"))
+            ->orderBy('messages.id','DESC')
+            ->limit($paginate)
+            // ->simplePaginate($paginate);
+            ->get();
+        }else{
+        $messages=ConversationUser::where('conversation_user.conversation_id',$convId)
+            ->where('conversation_user.user_id',$userId)
+            ->join('messages','messages.conversation_id','conversation_user.conversation_id')
+            ->join('users','users.id','messages.sender_id')
+            ->where('messages.id','>=','conversation_user.start_at')
+            ->where('messages.id','<',$from)
+            ->select(DB::raw("messages.id,messages.sender_id,messages.content_type,messages.content,messages.text_msg,messages.created_at,users.name as sender_name"))
+            ->orderBy('messages.id','DESC')
+            ->limit($paginate)
+            // ->simplePaginate($paginate);
+            ->get();
+        }
+       
         $response=ApiHelper::createAPIResponse(false,200,"",$messages);
         return response()->json($response, 200);
     }

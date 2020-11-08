@@ -84,4 +84,4 @@ Route::get('getConversationUsers/{convId}','Api\ConversationController@getConver
 
 //Message
 Route::post('sendMessage','Api\ConversationController@sendMessage');
-Route::get('getChatMessages/{convId}/{userId}','Api\ConversationController@getChatMessages');
+Route::get('getChatMessages/{convId}/{userId}/{from}/{paginate}','Api\ConversationController@getChatMessages');

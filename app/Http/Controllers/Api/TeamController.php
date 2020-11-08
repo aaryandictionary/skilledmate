@@ -7,6 +7,8 @@ use App\Models\Team;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Helpers\ApiHelper;
+use App\Models\Conversation;
+use App\Models\ConversationUser;
 use App\Models\TeamUser;
 use App\User;
 use Exception;
@@ -34,6 +36,8 @@ class TeamController extends Controller
         }
 
         $teamData=$request->all();
+        $conversation=[];
+
         if ($request->hasFile('team_icon')) {
             $image = $request->file('team_icon');
             $name = time().'.'.$image->getClientOriginalExtension();
@@ -42,7 +46,16 @@ class TeamController extends Controller
 
             $path=url('').'/images/'.$name;
             $teamData['team_icon']=$path;
+            $conversation['conv_icon']=$path;
         }
+
+        $conversation['conv_title']=$teamData['team_title'];
+        $conversation['conv_desc']=$teamData['team_tagline'];
+        $conversation['conv_type']="GROUP";
+
+        $createConv=Conversation::create($conversation);
+
+        $teamData['conversation_id']=$createConv['id'];
 
         $team=Team::create($teamData);
 
@@ -52,7 +65,14 @@ class TeamController extends Controller
         $teamuser['role_title']=$request->role_title;
         $teamuser['role']='ADMIN';
 
+        $convUser=[];
+        $convUser['user_id']=$request->user_id;
+        $convUser['conversation_id']=$createConv['id'];
+        $convUser['role']="ADMIN";
+
         TeamUser::create($teamuser);
+
+        ConversationUser::create($convUser);
 
         if($request->tags){
             $team->tags()->attach($request->tags);
@@ -99,12 +119,21 @@ class TeamController extends Controller
         $teamuser['role_title']='FOLLOWER';
         $teamuser['role']='FOLLOWER';
 
+        $conversationId=Team::find($request->team_id)->pluck('conversation_id');
+
         $follower=TeamUser::where('team_id','=',$request->team_id)
                             ->where('user_id','=',$request->user_id)
                             ->first();
 
         if(!$follower){
             $follower=TeamUser::create($teamuser);
+
+            $convUser=[];
+            $convUser['user_id']=$request->user_id;
+            $convUser['conversation_id']=$conversationId;
+            $convUser['role']="USER";
+
+            $convers=ConversationUser::create($convUser);
         }
 
         $response=ApiHelper::createAPIResponse(false,1,"You are following the team",null);
@@ -118,11 +147,25 @@ class TeamController extends Controller
         $teamuser['role_title']=$request->role_title;
         $teamuser['role']=$request->role;
 
+        $conversationId=Team::find($request->team_id)->pluck('conversation_id');
+
         $member=TeamUser::where('team_id','=',$request->team_id)
                         ->where('user_id','=',$request->user_id)
                         ->first();
         if(!$member){
             $member=TeamUser::create($teamuser);
+
+            $convUser=[];
+            $convUser['user_id']=$request->user_id;
+            $convUser['conversation_id']=$conversationId;
+
+            if($request->role=="ADMIN"){
+                $convUser['role']="ADMIN";
+            }else if($request->role=="FOLLOWER"){
+                $convUser['role']="USER";
+            }
+            
+            $convers=ConversationUser::create($convUser);
         }
 
         $response=ApiHelper::createAPIResponse(false,1,"You are now member of the team",null);

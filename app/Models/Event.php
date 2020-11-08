@@ -19,6 +19,7 @@ class Event extends Model
         'event_deadline',
         'event_privacy',
         'active',
+        'conversation_id',
         'created_at',
         'updated_at',
     ];

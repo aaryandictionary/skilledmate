@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Helpers\ApiHelper;
 use App\Http\Controllers\Controller;
+use App\Models\Conversation;
+use App\Models\ConversationUser;
 use App\Models\Event;
 use App\Models\EventParticipant;
 use App\Models\Post;
@@ -38,6 +40,7 @@ class EventController extends Controller
             return response()->json($response, 200);            
         }
 
+        $conversations=[];
         $event=[];
         $event['event_details']=$request->event_details;
         $event['user_id']=$request->user_id;
@@ -50,6 +53,10 @@ class EventController extends Controller
         $event['active']=$request->active;
         $event['event_deadline']=$request->event_deadline;
 
+        $conversation['conv_title']=$event['event_title'];
+        $conversation['conv_desc']=$event['event_organiser'];
+        $conversation['conv_type']="GROUP";
+
         if($request->event_image){
             $image = $request->file('event_image');
             $name = time().'.'.$image->getClientOriginalExtension();
@@ -58,12 +65,25 @@ class EventController extends Controller
 
             $path=url('').'/EventsImages/'.$name;
             $event['event_image']=$path;
-            
-        $eventCreated=Event::create($event);
+            $conversation['conv_icon']=$path;
+
+            $createConv=Conversation::create($conversation);
+            $event['conversation_id']=$createConv['id'];
+
+            $eventCreated=Event::create($event);
         }else{
+            $createConv=Conversation::create($conversation);
+            $event['conversation_id']=$createConv['id'];
+
             $eventCreated=Event::create($event);
         }
 
+        $convUser=[];
+        $convUser['user_id']=$request->user_id;
+        $convUser['conversation_id']=$createConv['id'];
+        $convUser['role']="ADMIN";
+
+        ConversationUser::create($convUser);
 
         // $eventpart=[];
         // $eventpart['user_id']=$request->user_id;
@@ -101,7 +121,21 @@ class EventController extends Controller
         $eventpart['user_id']=$request->user_id;
         $eventpart['event_id']=$request->event_id;
 
-        $eventParticipantCreated=EventParticipant::create($eventpart);
+        $conversationId=Event::find($request->event_id)->pluck('conversation_id');
+
+        $eventParticipantCreated=EventParticipant::where('event_id',$request->event_id)
+                                            ->where('user_id',$request->user_id)
+                                            ->first();
+
+        if(!$eventParticipantCreated){
+            $eventParticipantCreated=EventParticipant::create($eventpart);
+            $convUser=[];
+            $convUser['user_id']=$request->user_id;
+            $convUser['conversation_id']=$conversationId;
+            $convUser['role']="USER";
+    
+            ConversationUser::create($convUser);
+        }
 
         $response=ApiHelper::createAPIResponse(false,1,"Event created successfully",null);
         return response()->json($response, 200);

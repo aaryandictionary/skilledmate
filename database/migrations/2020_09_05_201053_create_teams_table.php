@@ -20,6 +20,7 @@ class CreateTeamsTable extends Migration
             $table->string('team_icon')->nullable();
             $table->string('team_tagline');
             $table->string('team_description');
+            $table->bigInteger('conversation_id');
             $table->timestamps();
         });
     }

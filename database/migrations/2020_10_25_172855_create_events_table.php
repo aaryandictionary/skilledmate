@@ -25,6 +25,7 @@ class CreateEventsTable extends Migration
             $table->string('event_privacy')->default('PUBLIC');
             $table->integer('active')->default(1);
             $table->timestamp('event_deadline')->nullable();
+            $table->bigInteger('conversation_id');
             $table->timestamps();
         });
     }
