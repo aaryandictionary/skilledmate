@@ -16,10 +16,10 @@ class CreateUsersTable extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('connection_id');
-            $table->string('seen_status');
-            $table->integer('is_connected');
-            $table->text('token');
+            $table->string('connection_id')->nullable();
+            $table->string('seen_status')->nullable();
+            $table->integer('is_connected')->default(0);
+            $table->text('token')->nullable();
             $table->string('email');
             $table->bigInteger('college_id');
             $table->string('user_image')->nullable();
