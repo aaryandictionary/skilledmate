@@ -180,7 +180,7 @@ class UserController extends Controller
     public function removeSkill($userId,$skillId){
         $user=User::find($userId);
 
-        $user->tags()->deattach($skillId);
+        $user->tags()->deatach($skillId);
 
         $response=ApiHelper::createAPIResponse(false,200,"Tag added successfully",null);
         return response()->json($response, 200); 
@@ -192,7 +192,7 @@ class UserController extends Controller
         $tags=$user->tags()->pluck('taggable_id');
 
         $skills=Tag::where('is_skill',1)
-                        ->whereIn('id',$tags)
+                        ->whereNotIn('id',$tags)
                         ->select('id','name')
                         ->get();
 
