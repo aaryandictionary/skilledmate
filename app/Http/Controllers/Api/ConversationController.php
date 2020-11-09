@@ -143,6 +143,8 @@ class ConversationController extends Controller
         $uids[0]=$request->sender_id;
         $uids[1]=$request->receiver_id;
 
+        $msgs=$request->all();
+
         if($request->conversation_id=="-1"){
             $conversation=ConversationUser::whereIn('conversation_user.user_id',$uids)
                                         ->leftJoin('conversations','conversations.id','conversation_user.conversation_id')
@@ -169,13 +171,13 @@ class ConversationController extends Controller
                 $user2['role']="USER";
                 ConversationUser::create($user2);
                 
-                $request->conversation_id=$conversation;
+                $msgs['conversation_id']=$conversation;
             }else{
-                $request->conversation_id=$conversation;
+                $msgs['conversation_id']=$conversation;
             }
         }
 
-        if($request->content){
+        if($request->hasFile('content')){
             $image = $request->file('content');
             $name = time().'.'.$image->getClientOriginalExtension();
             $destinationPath = public_path('/MessageContent');
@@ -183,12 +185,11 @@ class ConversationController extends Controller
 
             $path=url('').'/MessageContent/'.$name;
       
-            $request['content']=$path;
-            
-            $message=Message::create($request->all());
-        }else{
-            $message=Message::create($request->all());
+            $msgs['content']=$path;
+
         }
+        $message=Message::create($msgs);
+
 
         $response=ApiHelper::createAPIResponse(false,200,"",$message);
         return response()->json($response, 200);

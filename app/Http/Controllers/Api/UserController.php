@@ -182,14 +182,14 @@ class UserController extends Controller
 
         $user->tags()->deatach($skillId);
 
-        $response=ApiHelper::createAPIResponse(false,200,"Tag added successfully",null);
+        $response=ApiHelper::createAPIResponse(false,200,"",null);
         return response()->json($response, 200); 
     }
 
     public function getAddableSkillList($userId){
         $user=User::find($userId);
 
-        $tags=$user->tags()->pluck('taggable_id');
+        $tags=$user->tags()->pluck('id');
 
         $skills=Tag::where('is_skill',1)
                         ->whereNotIn('id',$tags)

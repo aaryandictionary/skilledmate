@@ -67,23 +67,24 @@ class PostController extends Controller
 
         if($type=="POST"){
             $post=Post::find($id);
-            $postTags=$post->tags()->pluck('taggable_id');    
+            $postTags=$post->tags()->pluck('id');    
         }else if($type=="TEAM"){
             $team=Team::find($id);
-            $postTags=$team->tags()->pluck('taggable_id');
+            $postTags=$team->tags()->pluck('id');
         }else if($type=="COURSE"){
             $course=Course::find($id);
-            $postTags=$course->tags()->pluck('taggable_id');
+            $postTags=$course->tags()->pluck('id');
         }
         
         $tags=Tag::where('is_skill',1)
                 ->whereIn('id',$postTags)
                 ->select('id','name')
-                ->addSelect(DB::raw("true as my_tag"));
+                ->addSelect(DB::raw("'true' as my_tag"));
         $finalTags=Tag::where('is_skill',1)
                     ->whereNotIn('id',$postTags)
                     ->select('id','name')
-                    ->addSelect(DB::raw("false as my_tag"))
+                    ->addSelect(DB::raw("'false' as my_tag"))
+                    ->union($tags)
                     ->get();
         $response=ApiHelper::createAPIResponse(false,200,"",$finalTags);
         return response()->json($response, 200);
