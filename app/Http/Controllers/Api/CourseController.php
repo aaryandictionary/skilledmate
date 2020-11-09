@@ -49,9 +49,6 @@ class CourseController extends Controller
         }else{
             $courses=Course::create($courseData);
         }
-
-
-
         $contents=$request->content;
 
         $tags=$request->tags;
@@ -76,6 +73,77 @@ class CourseController extends Controller
         $response=ApiHelper::createAPIResponse(false,-1,"",null);
         return response()->json($response, 200);
     }
+
+    }
+
+    public function updateCourse(Request $request){
+        $validator = Validator::make($request->all(), [ 
+            'id'=>'required',
+            'user_id' => 'required', 
+            'course_title' => 'required', 
+            'course_details' => 'required',
+            'course_duration'=>'required',
+            'course_fee'=>'required',
+        ]);
+
+        if ($validator->fails()) { 
+            $response=ApiHelper::createAPIResponse(true,-1,$validator->errors(),null);
+            return response()->json($response, 200);            
+        }
+
+        $course=Course::find($request->id);
+        $course->course_title=$request->course_title;
+        $course->course_details=$request->course_details;
+        $course->course_duration=$request->course_duration;
+        $course->course_fee=$request->course_fee;
+
+        if($request->hasFile('course_image')){
+            $image = $request->file('course_image');
+            $name = time().'.'.$image->getClientOriginalExtension();
+            $destinationPath = public_path('/CourseImages');
+            $image->move($destinationPath, $name);
+
+            $path=url('').'/CourseImages/'.$name;
+            $course->course_image=$path;
+        }else{
+            if($request->course_image==null){
+                $course->course_image=null;
+            }
+        }
+
+        $course->save();
+
+        if($request->tags){
+            $course->tags()->sync($request->tags);
+        }
+
+        $response=ApiHelper::createAPIResponse(false,1,"",$course);
+        return response()->json($response, 200);
+
+    }
+
+    public function updateCourseContent(Request $request){
+        $validator = Validator::make($request->all(), [ 
+            'id'=>'required',
+            'course_id' => 'required', 
+            'content_title' => 'required', 
+            'content_details' => 'required',
+            'content_time'=>'required',
+        ]);
+
+        if ($validator->fails()) { 
+            $response=ApiHelper::createAPIResponse(true,-1,$validator->errors(),null);
+            return response()->json($response, 200);            
+        }
+
+        $courseContent=CourseContent::find($request->id);
+
+        $courseContent->content_title=$request->content_title;
+        $courseContent->content_details=$request->content_details;
+        $courseContent->content_time=$request->content_time;
+
+        $response=ApiHelper::createAPIResponse(false,1,"",$courseContent);
+        return response()->json($response, 200);
 
     }
 

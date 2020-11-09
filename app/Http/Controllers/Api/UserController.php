@@ -135,8 +135,9 @@ class UserController extends Controller
 
         $user->name=$request->name;
         $user->email=$request->email;
+        $user->college_id=$request->college_id;
 
-        if($request->user_image){
+        if($request->hasFile('user_image')){
             $image = $request->file('user_image');
             $name = time().'.'.$image->getClientOriginalExtension();
             $destinationPath = public_path('/UsersImages');
@@ -150,7 +151,7 @@ class UserController extends Controller
 
         $user=User:: where('id','=',$request->id)
                     ->select('id','name','email','user_image','college_id')
-                    ->with(['college:id,college_name','skills:skill_id,skill_name,skill_category'])
+                    ->with(['college:id,college_name','tags:id,name'])
                     ->first();
         $response=ApiHelper::createAPIResponse(false,200,"User updated successfully",$user);
         return response()->json($response, 200); 
@@ -170,14 +171,33 @@ class UserController extends Controller
     public function addSkill(Request $request){
         $user=User::find($request->user_id);
 
-        $tag=$user->tags()->where('id',$request->tag_id)->first();
-
-        if(!$tag){
-            $tag=$user->tags()->attach($request->tag_id);
-        }
+        $tag=$user->tags()->attach($request->tags);
 
         $response=ApiHelper::createAPIResponse(false,200,"Tag added successfully",null);
         return response()->json($response, 200); 
+    }
+
+    public function removeSkill($userId,$skillId){
+        $user=User::find($userId);
+
+        $user->tags()->deattach($skillId);
+
+        $response=ApiHelper::createAPIResponse(false,200,"Tag added successfully",null);
+        return response()->json($response, 200); 
+    }
+
+    public function getAddableSkillList($userId){
+        $user=User::find($userId);
+
+        $tags=$user->tags()->pluck('taggable_id');
+
+        $skills=Tag::where('is_skill',1)
+                        ->whereIn('id',$tags)
+                        ->select('id','name')
+                        ->get();
+
+        $response=ApiHelper::createAPIResponse(false,200,"",$skills);
+        return response()->json($response, 200);
     }
 
     public function getUsersSuggestions($userId){

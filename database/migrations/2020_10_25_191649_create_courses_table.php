@@ -21,7 +21,6 @@ class CreateCoursesTable extends Migration
             $table->string('course_duration');
             $table->string('course_fee');
             $table->string('course_image')->nullable();
-            $table->integer('active')->default(1);
             $table->timestamps();
         });
     }

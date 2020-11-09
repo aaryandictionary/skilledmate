@@ -40,7 +40,7 @@ class EventController extends Controller
             return response()->json($response, 200);            
         }
 
-        $conversations=[];
+        $conversation=[];
         $event=[];
         $event['event_details']=$request->event_details;
         $event['user_id']=$request->user_id;
@@ -50,7 +50,6 @@ class EventController extends Controller
         $event['event_title']=$request->event_title;
         // $event['event_image']="";
         $event['event_privacy']=$request->event_privacy;
-        $event['active']=$request->active;
         $event['event_deadline']=$request->event_deadline;
 
         $conversation['conv_title']=$event['event_title'];
@@ -113,6 +112,77 @@ class EventController extends Controller
         return response()->json($response, 200);
     }
         
+    }
+
+    public function updateEvent(Request $request){
+        $validator = Validator::make($request->all(), [ 
+            'id'=>'required',
+            'user_id' => 'required', 
+            'team_id'=>'required',
+            'event_title' => 'required', 
+            'event_details' => 'required',
+            'conversation_id'=>'required',
+            'event_time'=>'required',
+            'event_privacy'=>'required',
+            'event_deadline'=>'required',
+        ]);
+
+        if ($validator->fails()) { 
+            $response=ApiHelper::createAPIResponse(true,-1,$validator->errors(),null);
+            return response()->json($response, 200);            
+        }
+
+        DB::beginTransaction();
+
+        try{
+
+        $event=Event::find($request->id);
+        $post=Post::where('event_id','=',$request->id)->first();
+        $conversation=Conversation::find($request->conversation_id);
+
+        $event->event_title=$request->event_title;
+        $event->event_details=$request->event_details;
+        $event->event_time=$request->event_time;
+        $event->event_privacy=$request->event_privacy;
+        $event->event_deadline=$request->event_deadline;
+        $event->event_organiser=$request->event_organiser;
+
+        $post->post_content=$request->event_details;
+
+        $conversation['conv_title']=$request['event_title'];
+        $conversation['conv_desc']=$request['event_organiser'];
+
+        if($request->hasFile('event_image')){
+            $image = $request->file('event_image');
+            $name = time().'.'.$image->getClientOriginalExtension();
+            $destinationPath = public_path('/EventsImages');
+            $image->move($destinationPath, $name);
+
+            $path=url('').'/EventsImages/'.$name;
+            $event->event_image=$path;
+            $conversation->conv_icon=$path;
+            $post->post_image=$path;
+        }else{
+            if($request->event_image==null){
+                $event->event_image=null;
+                $conversation->conv_icon=null;
+                $post->post_image=null;
+            }
+        }
+
+        $event->save();
+        $conversation->save();
+        $post->save();
+
+        DB::commit();
+        $response=ApiHelper::createAPIResponse(false,1,"",null);
+        return response()->json($response, 200);
+
+    }catch(Exception $e){
+        DB::rollBack();
+        $response=ApiHelper::createAPIResponse(false,-1,"",null);
+        return response()->json($response, 200);
+    }
     }
 
     public function joinEvent(Request $request){
@@ -178,7 +248,7 @@ class EventController extends Controller
 
     public function getEventDetails($eventId,$userId){
         $event=Event::where('events.id',$eventId)
-                        ->select('events.id','event_details','events.team_id','events.user_id','event_organiser','event_time','event_title','event_image','event_deadline','events.updated_at')
+                        ->select('events.id','event_details','events.team_id','events.user_id','event_organiser','event_time','event_title','event_image','event_deadline','events.updated_at','events.conversation_id')
                         ->withCount('participants')
                         ->leftJoin('team_user',function($joins)use ($userId){
                             $joins->on('team_user.team_id','=','events.team_id')

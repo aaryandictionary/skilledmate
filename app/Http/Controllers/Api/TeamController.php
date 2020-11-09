@@ -90,6 +90,70 @@ class TeamController extends Controller
 
     }
 
+    public function updateTeam(Request $request){
+        $validator = Validator::make($request->all(), [ 
+            'id'=>'required',
+            'team_title' => 'required', 
+            'user_id' => 'required', 
+            'team_tagline' => 'required',
+            'team_description'=>'required',
+        ]);
+
+        if ($validator->fails()) { 
+            $response=ApiHelper::createAPIResponse(true,-1,$validator->errors(),null);
+            return response()->json($response, 200);            
+        }
+
+        DB::beginTransaction();
+
+        try{
+
+        $conversation=Conversation::find($request->conversation_id);
+        $conversation->conv_title=$request->team_title;
+        $conversation->conv_desc=$request->team_tagline;
+
+        $team=Team::find($request->id);
+        $team->team_title=$request->team_title;
+        $team->team_tagline=$request->team_tagline;
+        $team->team_description=$request->team_description;
+
+        if ($request->hasFile('team_icon')) {
+            $image = $request->file('team_icon');
+            $name = time().'.'.$image->getClientOriginalExtension();
+            $destinationPath = public_path('/images');
+            $image->move($destinationPath, $name);
+
+            $path=url('').'/images/'.$name;
+            $team->team_icon=$path;
+            $conversation->conv_icon=$path;
+        }else{
+            
+            if($request->team_icon==null){
+                $team->team_icon=null;
+                $conversation->conv_icon=null;
+            }
+        }
+        
+
+        $team->save();
+        $conversation->save();
+
+        if($request->tags){
+            $team->tags()->sync($request->tags);
+        }
+
+        DB::commit();
+
+        $response=ApiHelper::createAPIResponse(false,1,"",null);
+        return response()->json($response, 200); 
+    }catch(Exception $e){
+        DB::rollBack();
+        $response=ApiHelper::createAPIResponse(false,-1,"",null);
+        return response()->json($response, 200); 
+    }
+
+    }
+
     public function getMyTeams($userId){
         $teams=DB::table('teams')->leftjoin('team_user','teams.id','=','team_user.team_id')
                         ->select('teams.id','teams.team_title','teams.team_tagline','teams.team_icon','team_user.role','team_user.role_title')
@@ -138,6 +202,15 @@ class TeamController extends Controller
 
         $response=ApiHelper::createAPIResponse(false,1,"You are following the team",null);
         return response()->json($response, 200); 
+    }
+
+    public function removeTeamMember($teamId,$userId){
+        $teamuser=TeamUser::where('team_id','=',$teamId)
+                            ->where('user_id','=',$userId)
+                            ->delete();
+
+        $response=ApiHelper::createAPIResponse(false,1,"",null);
+        return response()->json($response, 200);                     
     }
 
     public function setRole(Request $request){

@@ -6,10 +6,13 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Helpers\ApiHelper;
+use App\Models\Course;
 use App\Models\MySkill;
 use App\Models\Post;
 use App\Models\PostComment;
 use App\Models\PostLike;
+use App\Models\Tag;
+use App\Models\Team;
 use App\User;
 use DB;
 
@@ -60,7 +63,74 @@ class PostController extends Controller
         return response()->json($response, 200);
     }
 
+    public function getNontags($type,$id){
 
+        if($type=="POST"){
+            $post=Post::find($id);
+            $postTags=$post->tags()->pluck('taggable_id');    
+        }else if($type=="TEAM"){
+            $team=Team::find($id);
+            $postTags=$team->tags()->pluck('taggable_id');
+        }else if($type=="COURSE"){
+            $course=Course::find($id);
+            $postTags=$course->tags()->pluck('taggable_id');
+        }
+        
+        $tags=Tag::where('is_skill',1)
+                ->whereIn('id',$postTags)
+                ->select('id','name')
+                ->addSelect(DB::raw("true as my_tag"));
+        $finalTags=Tag::where('is_skill',1)
+                    ->whereNotIn('id',$postTags)
+                    ->select('id','name')
+                    ->addSelect(DB::raw("false as my_tag"))
+                    ->get();
+        $response=ApiHelper::createAPIResponse(false,200,"",$finalTags);
+        return response()->json($response, 200);
+    }
+
+
+    public function updatePost(Request $request){
+        $rules =[
+            'id'=>'required',
+            'user_id'=>'required',
+            'post_type'=>'required',
+            'event_id'=>'required',
+        ];
+
+        $validator=Validator::make($request->all(),$rules);
+        if($validator->fails()){
+            $response=ApiHelper::createAPIResponse(true,400,$validator->errors(),null);
+            return response()->json($response,400);
+        }
+
+        $post=Post::find($request->id);
+        $post->post_content=$request->post_content;
+
+        if($request->hasFile('post_image')){
+            $image = $request->file('post_image');
+            $name = time().'.'.$image->getClientOriginalExtension();
+            $destinationPath = public_path('/PostImages');
+            $image->move($destinationPath, $name);
+
+            $path=url('').'/PostImages/'.$name;
+            $post->post_image=$path;
+        }else{
+                if($request->post_image==null){
+                    $post->post_image=null;
+                }
+        }
+
+        $post->save();
+
+        if($request->tags){
+            $post->tags()->sync($request->tags);
+        }
+
+        $response=ApiHelper::createAPIResponse(false,1,"",null);
+        return response()->json($response, 200);
+
+    }
 
 
     public function getUserPosts($userId){
@@ -110,6 +180,23 @@ class PostController extends Controller
         // $completePost=$posts->user()->get();
 
         $response=ApiHelper::createAPIResponse(false,200,"",$posts);
+        return response()->json($response, 200);
+    }
+
+    public function getPostDetails($postId){
+        $post=Post::find($postId)->with(['team','user'=>function($query){$query->join('colleges','colleges.id','college_id')->select('name','user_image','college_name','users.id');}])
+                    ->withCount(['likes','comments'])
+                    ->leftjoin('post_likes',function($joins){
+                        $joins->on('post_likes.post_id','=','id')
+                                ->where('post_likes.liker_id','=','posts.user_id');
+                    })
+                    // ->leftjoin('post_comments','post_comments.post_id','posts.id')
+                    // ->where('post_likes.liker_id',$user_id)
+                    ->addSelect(DB::raw("IF(post_likes.liker_id=posts.user_id,'true','false')as is_liked"))
+                    // ->addSelect(DB::raw("IF(post_comments.commenter_id=".$user_id.",post_comments.comment,'')as is_comment"))
+                    // ->addSelect('post_likes.liker_id')
+                    ->first();
+        $response=ApiHelper::createAPIResponse(false,200,"",$post);
         return response()->json($response, 200);
     }
 

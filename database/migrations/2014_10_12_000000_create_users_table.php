@@ -19,6 +19,7 @@ class CreateUsersTable extends Migration
             $table->string('connection_id')->nullable();
             $table->string('seen_status')->nullable();
             $table->integer('is_connected')->default(0);
+            $table->integer('last_receiver_id')->default(0);
             $table->text('token')->nullable();
             $table->string('email');
             $table->bigInteger('college_id');

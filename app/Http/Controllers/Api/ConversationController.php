@@ -129,6 +129,7 @@ class ConversationController extends Controller
         $rules =[
             'conversation_id'=>'required',
             'sender_id'=>'required',
+            'receiver_id'=>'required',
             'content_type'=>'required',
         ];
 
@@ -136,6 +137,42 @@ class ConversationController extends Controller
         if($validator->fails()){
             $response=ApiHelper::createAPIResponse(true,400,$validator->errors(),null);
             return response()->json($response,400);
+        }
+
+        $uids=[];
+        $uids[0]=$request->sender_id;
+        $uids[1]=$request->receiver_id;
+
+        if($request->conversation_id=="-1"){
+            $conversation=ConversationUser::whereIn('conversation_user.user_id',$uids)
+                                        ->leftJoin('conversations','conversations.id','conversation_user.conversation_id')
+                                        ->where('conversations.conv_type','MONO')
+                                        ->pluck('conversations.id');
+            if(!$conversation){
+                $convDetails=[];
+                $convDetails['conv_type']='MONO';
+
+                $conversation=Conversation::create($convDetails)->pluck('id');
+
+                $user1=[];
+                $user1['user_id']=$request->sender_id;
+                $user1['conversation_id']=$conversation;
+                $user1['start_at']=0;
+                $user1['role']="USER";
+
+                ConversationUser::create($user1);
+
+                $user2=[];
+                $user2['user_id']=$request->receiver_id;
+                $user2['conversation_id']=$conversation;
+                $user2['start_at']=0;
+                $user2['role']="USER";
+                ConversationUser::create($user2);
+                
+                $request->conversation_id=$conversation;
+            }else{
+                $request->conversation_id=$conversation;
+            }
         }
 
         if($request->content){

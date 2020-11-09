@@ -15,7 +15,6 @@ class Course extends Model
         'course_duration',
         'course_fee',
         'course_image',
-        'active',
         'created_at',
         'updated_at',
     ];
