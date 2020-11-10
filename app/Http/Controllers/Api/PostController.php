@@ -185,7 +185,7 @@ class PostController extends Controller
     }
 
     public function getPostDetails($postId){
-        $post=Post::find($postId)->with(['team','user'=>function($query){$query->join('colleges','colleges.id','college_id')->select('name','user_image','college_name','users.id');}])
+        $post=Post::where('id','=',$postId)->with(['team','user'=>function($query){$query->join('colleges','colleges.id','college_id')->select('name','user_image','college_name','users.id');}])
                     ->withCount(['likes','comments'])
                     ->leftjoin('post_likes',function($joins){
                         $joins->on('post_likes.post_id','=','id')
