@@ -250,7 +250,10 @@ class TeamController extends Controller
             $query->where('role','FOLLOWER');
         },'members'=>function($query){
             $query->where('role','MEMBER');
-        }])->leftJoin('team_user','team_user.team_id','teams.id')
+        }])->leftJoin('team_user',function($join)use($userId){
+                $join->on('team_user.team_id','=','teams.id')
+                    ->where('team_user.user_id','=',$userId);
+            })
             ->addSelect(DB::raw("IF(team_user.user_id=".$userId.",team_user.role,'false')as my_team"))
             ->first();
 
